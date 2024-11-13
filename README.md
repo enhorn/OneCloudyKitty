@@ -1,2 +1,2 @@
 # OneCloudyKitty
-Package to simplify CloudKit interactions.
+A small package to simplify basic CloudKit interactions.
