@@ -32,6 +32,13 @@ struct EntitiesList: View {
             #if os(iOS)
             .listStyle(.grouped)
             #endif
+            .refreshable {
+                do {
+                    try await subscriber.refresh()
+                } catch let error {
+                    print(error)
+                }
+            }
         }
     }
 

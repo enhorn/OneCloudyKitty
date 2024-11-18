@@ -9,39 +9,35 @@ import SwiftUI
 import CloudKit
 import OneCloudyKitty
 
+// Model fulfilling the protocol `OneRecordable`.
 class SomeEntity: OneRecordable {
 
-    enum RecordFields: String {
-        case name
-        case age
-    }
-
-    public var recordID: CKRecord.ID
-    public var name: String
-    public var age: Int
+    var recordID: CKRecord.ID
+    var name: String
+    var age: Int
 
     init(name: String, age: Int) {
+        self.recordID = Self.generateID() // Has a defaul implementation in `OneRecordable`.
         self.name = name
-        self.recordID = Self.generateID()
         self.age = age
     }
 
+    // From `OneRecordable`
     required init?(_ record: CKRecord) {
-        guard
-            let name = record[RecordFields.name.rawValue] as? String,
-            let age = record[RecordFields.age.rawValue] as? Int
-        else { return nil }
+        guard let name = record["name"] as? String, let age = record["age"] as? Int else { return nil }
         self.recordID = record.recordID
         self.name = name
         self.age = age
     }
 
+    // From `OneRecordable`
     func asDictionary() -> [String: Any] {
-        [
-            RecordFields.name.rawValue: name,
-            RecordFields.age.rawValue: age
-        ]
+        ["name": name, "age": age]
     }
+
+}
+
+extension SomeEntity {
 
     var description: String {
         "SomeEntity(name: \"\(name)\", age: \(age))"

@@ -115,8 +115,8 @@ public extension OneCloudController {
     ///   - entity: The ``OneRecordable`` entity to update.
     ///   - property: KeyPath to the property to update.
     ///   - value: Value to set.
-    /// - Returns: The updated ``OneRecordable`` entity contructet from the CloudKit responce.
-    func updateProperty<Entity: OneRecordable, Value>(entity: Entity, property: ReferenceWritableKeyPath<Entity, Value>, value: Value) async throws(OneCloudController.Error) -> Entity {
+    /// - Returns: The updated ``OneRecordable`` entity contructet from the CloudKit responce. Discardable.
+    @discardableResult func updateProperty<Entity: OneRecordable, Value>(entity: Entity, property: ReferenceWritableKeyPath<Entity, Value>, value: Value) async throws(OneCloudController.Error) -> Entity {
         do {
             setter(for: entity, keyPath: property)(value)
             return try await save(entity: entity)
