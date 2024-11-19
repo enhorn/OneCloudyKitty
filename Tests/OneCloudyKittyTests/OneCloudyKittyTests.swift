@@ -1,6 +1,7 @@
 import Testing
 import OneCloudyKitty
 
+// This needs an app target with CloudKit set up.
 @Test func creatingEntity() async throws {
     let controller = OneCloudController(database: .public, containerID: "iCloud.SomeTestContainer")
 

@@ -55,6 +55,7 @@ struct CreateEntityView: View {
                 entity = try await controller.save(entity: entity)
                 print("Saved entity: \(entity.description)")
 
+                // Just give the UI some time to display the state to the user. Not functional.
                 try await Task.sleep(nanoseconds: 2_000_000_000)
 
                 state = .fetchingEntities

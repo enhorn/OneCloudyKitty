@@ -13,6 +13,7 @@ public class OneCloudController {
 
     private let container: CKContainer
     private let database: CKDatabase
+    private var changeSubscriptions: [ChangeSubscription] = []
 
     /// - Parameters:
     ///   - database: Database to be used. Defalts to `.private`.
@@ -49,6 +50,7 @@ public extension OneCloudController {
             let entityRecord = entity.generateNewRecord()
             let record = try await database.save(entityRecord)
             if let entity = Entity(record) {
+                notifySubscriptions()
                 return entity
             } else {
                 throw Error.createdRecordLacksData
@@ -65,6 +67,7 @@ public extension OneCloudController {
     @discardableResult func delete<Entity: OneRecordable>(entity: Entity) async throws(OneCloudController.Error) -> Entity {
         do {
             try await database.deleteRecord(withID: entity.recordID)
+            notifySubscriptions()
             return entity
         } catch let error {
             throw .couldNotDeleteRecord(error)
@@ -80,6 +83,7 @@ public extension OneCloudController {
             let record = try await database.record(for: entity.recordID)
             let savedRecord = try await database.save(entity.update(record: record))
             if let entity = Entity(savedRecord) {
+                notifySubscriptions()
                 return entity
             } else {
                 throw Error.savedRecordLacksData
@@ -122,6 +126,38 @@ public extension OneCloudController {
             return try await save(entity: entity)
         } catch {
             throw .couldNotUpdateRecord
+        }
+    }
+
+}
+
+// MARK: - Internal subscriptions -
+
+extension OneCloudController {
+
+    internal struct ChangeSubscription {
+
+        let queue: DispatchQueue
+        let callback: () -> Void
+
+        init(queue: DispatchQueue = .main, callback: @escaping () -> Void) {
+            self.queue = queue
+            self.callback = callback
+        }
+
+    }
+
+    internal func subscribeToChanges(subscription: ChangeSubscription) {
+        changeSubscriptions.append(subscription)
+    }
+
+    internal func subscribeToChanges(callback: @escaping () -> Void) {
+        subscribeToChanges(subscription: ChangeSubscription(callback: callback))
+    }
+
+    private func notifySubscriptions() {
+        changeSubscriptions.forEach {
+            $0.queue.async(execute: DispatchWorkItem(block: $0.callback))
         }
     }
 

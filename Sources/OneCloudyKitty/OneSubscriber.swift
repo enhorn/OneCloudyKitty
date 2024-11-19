@@ -42,6 +42,10 @@ import CloudKit
         self.pullInterval = pullInterval
     }
 
+    deinit {
+        stop()
+    }
+
 }
 
 // MARK: - API -
@@ -57,11 +61,18 @@ public extension OneSubscriber {
         }
 
         timer = Timer.scheduledTimer(withTimeInterval: pullInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @Sendable [weak self] in
                 try? await self?.refresh()
             }
         }
+
         listener = notifier.register(event: .willEnterForeground) { [weak self] _ in
+            Task { @Sendable [weak self] in
+                try? await self?.refresh()
+            }
+        }
+
+        controller.subscribeToChanges { [weak self] in
             Task { @Sendable [weak self] in
                 try? await self?.refresh()
             }
@@ -80,7 +91,6 @@ public extension OneSubscriber {
     /// Manually refreshes the data. Does not the affect the timing of the scheduled pulling of data.
     func refresh() async throws {
         entities = try await controller.getAll(predicate: predicate)
-        print("Refreshed entities")
     }
 
 }
