@@ -12,7 +12,7 @@ We start by defining our model that we want to store.
 // Model fulfilling the protocol `OneRecordable`.
 class SomeEntity: OneRecordable {
 
-    var recordID: CKRecord.ID
+    var recordID: CKRecord.ID // Required by `OneRecordable`.
     var name: String
     var age: Int
 
@@ -22,17 +22,12 @@ class SomeEntity: OneRecordable {
         self.age = age
     }
 
-    // From `OneRecordable`. Can return `nil`.
+    // Required by `OneRecordable`. Can return `nil`.
     required init?(_ record: CKRecord) {
         guard let name = record["name"] as? String, let age = record["age"] as? Int else { return nil }
         self.recordID = record.recordID
         self.name = name
         self.age = age
-    }
-
-    // From `OneRecordable`.
-    func asDictionary() -> [String: Any] {
-        ["name": name, "age": age]
     }
 
 }

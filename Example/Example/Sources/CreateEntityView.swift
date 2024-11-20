@@ -25,9 +25,9 @@ struct CreateEntityView: View {
                 Text("State: \(state.rawValue)")
                 Text("Subscribed records: \(subscriber.entities.count)")
 
-                Button("Add Entity") {
-                    buttonWasPressed()
-                }.padding(8)
+                Button("Add Entity", action: buttonWasPressed)
+                    .disabled(state != .idle)
+                    .padding(8)
 
             }.navigationTitle("Create entity")
         }

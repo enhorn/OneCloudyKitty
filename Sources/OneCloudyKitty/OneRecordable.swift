@@ -22,6 +22,8 @@ public protocol OneRecordable: Identifiable, AnyObject {
     init?(_ record: CKRecord)
     
     /// Generates a dictionary representation to be used when updating properties on a ``CKRecord``. See function below.
+    /// Has a default implementation that handles simple properties.
+    /// For more complex models, you might need to implement this function.
     /// - Returns: Dictionary representation of the stored properties.
     func asDictionary() -> [String: Any]
     
@@ -62,6 +64,16 @@ extension OneRecordable {
             record.setValue(value, forKey: key)
         }
         return record
+    }
+
+    // Default implementation. Can handle basic recodable models.
+    public func asDictionary() -> [String: Any] {
+        Mirror(reflecting: self).children.reduce([String: Any]()) { current, child in
+            guard let label = child.label, label != "recordID" else { return current }
+            var updated = current
+            updated[label] = child.value
+            return updated
+        }
     }
 
 }

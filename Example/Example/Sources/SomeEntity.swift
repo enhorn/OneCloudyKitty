@@ -22,17 +22,12 @@ class SomeEntity: OneRecordable {
         self.age = age
     }
 
-    // From `OneRecordable`
+    // Required by `OneRecordable`
     required init?(_ record: CKRecord) {
         guard let name = record["name"] as? String, let age = record["age"] as? Int else { return nil }
         self.recordID = record.recordID
         self.name = name
         self.age = age
-    }
-
-    // From `OneRecordable`
-    func asDictionary() -> [String: Any] {
-        ["name": name, "age": age]
     }
 
 }
