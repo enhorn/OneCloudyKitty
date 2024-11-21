@@ -25,17 +25,20 @@ struct CreateEntityView: View {
                 Text("State: \(state.rawValue)")
                 Text("Subscribed records: \(subscriber.entities.count)")
 
-                Button("Add Entity", action: buttonWasPressed)
-                    .disabled(state != .idle)
-                    .padding(8)
+                VStack(spacing: 8) {
+                    Button("Add Entity", action: addButtonWasPressed).disabled(state != .idle)
+                    Button("Update all", action: updateButtonWasPressed).disabled(state != .idle)
+                    Button("Delete all", action: deleteButtonWasPressed).disabled(state != .idle)
+                }.padding(8)
 
             }.navigationTitle("Create entity")
         }
     }
 
-    private func buttonWasPressed() {
+    private func addButtonWasPressed() {
         Task {
             do {
+                print("-----------------------------------------")
                 await waitIfUITest()
 
                 state = .creating
@@ -55,8 +58,7 @@ struct CreateEntityView: View {
                 entity = try await controller.save(entity: entity)
                 print("Saved entity: \(entity.description)")
 
-                // Just give the UI some time to display the state to the user. Not functional.
-                try await Task.sleep(nanoseconds: 2_000_000_000)
+                await waitIfUITest()
 
                 state = .fetchingEntities
                 let entities: [SomeEntity] = try await controller.getAll()
@@ -70,6 +72,59 @@ struct CreateEntityView: View {
                     print("Deleted entity: \(entity.description)")
                     await waitIfUITest()
                 }
+
+                state = .idle
+                print("-----------------------------------------")
+            } catch let error {
+                print(error)
+                state = .error
+            }
+        }
+    }
+
+    private func deleteButtonWasPressed() {
+        Task {
+            do {
+                state = .deleting
+                let results = try await controller.delete(entities: subscriber.entities)
+
+                print("-----------------------------------------")
+                for result in results {
+                    switch result {
+                        case .success(let id): print("Deleted: \(id.recordName)")
+                        case .failure(let error): print("Failed to delete: \(error.localizedDescription)")
+                    }
+                }
+                print("-----------------------------------------")
+
+                state = .idle
+            } catch let error {
+                print(error)
+                state = .error
+            }
+        }
+    }
+
+    private func updateButtonWasPressed() {
+        Task {
+            do {
+                state = .deleting
+
+                let toUpdate: [SomeEntity] = subscriber.entities.enumerated().map { index, entity in
+                    entity.name = "\(entity) (updated \(index))"
+                    return entity
+                }
+
+                let results = try await controller.save(entities: toUpdate)
+
+                print("-----------------------------------------")
+                for result in results {
+                    switch result {
+                        case .success(let entity): print("Updated: \(entity)")
+                        case .failure(let error): print("Failed to update: \(error)")
+                    }
+                }
+                print("-----------------------------------------")
 
                 state = .idle
             } catch let error {

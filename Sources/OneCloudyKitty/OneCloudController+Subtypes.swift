@@ -38,6 +38,9 @@ extension OneCloudController {
         /// The record could not be saved.
         case couldNotSaveRecord(_ cloudKitError: Swift.Error)
 
+        /// The records could not be saved.
+        case couldNotSaveRecords(_ cloudKitError: Swift.Error)
+
         /// The `OneRecordable` instance could not be initialized from the returned record. Happens on `create`.
         case createdRecordLacksData
 
