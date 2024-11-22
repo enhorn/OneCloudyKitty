@@ -66,7 +66,7 @@ extension OneRecordable {
         return record
     }
 
-    // Default implementation. Can handle basic recodable models.
+    // Default implementation. Can handle basic recordable models.
     public func asDictionary() -> [String: Any] {
         Mirror(reflecting: self).children.reduce([String: Any]()) { current, child in
             guard let label = child.label, label != "recordID" else { return current }

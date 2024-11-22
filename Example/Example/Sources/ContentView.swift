@@ -17,7 +17,9 @@ struct ContentView: View {
 
     init () {
         subscriber = OneSubscriber<SomeEntity>(controller: controller, pullInterval: 5)
-        subscriber.start()
+        subscriber.subscribeToChanges { entities in
+            print("Manually subscribed entities count: \(entities.count)")
+        }
     }
 
     var body: some View {
@@ -36,6 +38,8 @@ struct ContentView: View {
                         Text("Entities (\(subscriber.entities.count))")
                     }
                 }
+        }.onAppear {
+            subscriber.start()
         }
     }
 

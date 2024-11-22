@@ -15,6 +15,7 @@ import CloudKit
     private var listener: OneNotifier.Listener?
     private let pullInterval: TimeInterval
     private var timer: Timer?
+    private var changeSubscriptions: [ChangeSubscription] = []
 
     /// Controller used by the subscriber.
     public let controller: OneCloudController
@@ -30,15 +31,19 @@ import CloudKit
     }
 
     /// List of fetched entities.
-    public private(set) var entities: [Entity] = []
+    public private(set) var entities: [Entity] {
+        didSet { notifySubscriptions() }
+    }
 
     /// - Parameters:
     ///   - controller: ``OneCloudController`` to use.
     ///   - predicate: Optional predicate to apply to fetches. Defaults to `NSPredicate(value: true)` (all records).
+    ///   - initialEntities: Initial entities. Defaults to `[]`.
     ///   - pullInterval: Time interval for automatic pulling of new data. Defaults to `5 minutes`.
-    public init(controller: OneCloudController, predicate: NSPredicate = NSPredicate(value: true), pullInterval: TimeInterval = 5 * 60) {
+    public init(controller: OneCloudController, predicate: NSPredicate = NSPredicate(value: true), initialEntities: [Entity] = [], pullInterval: TimeInterval = 5 * 60) {
         self.controller = controller
         self.predicate = predicate
+        self.entities = initialEntities
         self.pullInterval = pullInterval
     }
 
@@ -91,6 +96,61 @@ public extension OneSubscriber {
     /// Manually refreshes the data. Does not the affect the timing of the scheduled pulling of data.
     func refresh() async throws {
         entities = try await controller.getAll(predicate: predicate)
+    }
+    
+    /// Subscribes to changes of the entities with a callback.
+    /// - Parameter callback: To be called when entities changes.
+    /// - Returns: ``OneSubscriber.ChangeSubscription``. Discardable.
+    @discardableResult func subscribeToChanges(callback: @escaping ([Entity]) -> Void) -> ChangeSubscription {
+        let subscription = ChangeSubscription(callback: callback)
+        subscribeToChanges(subscription: subscription)
+        return subscription
+    }
+
+    /// Subscribes to changes of the entities.
+    /// - Parameter subscription: Subscription object.
+    /// - Returns: ``OneSubscriber.ChangeSubscription``. Discardable.
+    @discardableResult func subscribeToChanges(subscription: ChangeSubscription) -> ChangeSubscription {
+        changeSubscriptions.append(subscription)
+        return subscription
+    }
+    
+    /// Unsubscribes from change callbacks.
+    /// - Parameter subscription: Subscription to unsubscribe.
+    func unsubscribeFromChanges(subscription: ChangeSubscription) {
+        changeSubscriptions.removeAll {
+            $0.uuid == subscription.uuid
+        }
+    }
+
+}
+
+extension OneSubscriber {
+
+    /// Subscriber struct for entities changes.
+    public struct ChangeSubscription {
+
+        internal let uuid: UUID = UUID()
+        internal let queue: DispatchQueue
+        internal let callback: ([Entity]) -> Void
+
+        /// - Parameters:
+        ///   - queue: Queue to call the callback on.
+        ///   - callback: Callback to call on changes.
+        public init(queue: DispatchQueue = .main, callback: @escaping ([Entity]) -> Void) {
+            self.queue = queue
+            self.callback = callback
+        }
+
+    }
+
+    private func notifySubscriptions() {
+        changeSubscriptions.forEach { subsciption in
+            subsciption.queue.async(execute: DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                subsciption.callback(self.entities)
+            })
+        }
     }
 
 }
