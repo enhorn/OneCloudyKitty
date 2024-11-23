@@ -55,7 +55,8 @@ extension OneRecordable {
 
     public func generateNewRecord() -> CKRecord {
         let record = CKRecord(recordType: Self.recordType, recordID: recordID)
-        return record.with { update(record: $0) }
+        update(record: record)
+        return record
     }
 
     @discardableResult

@@ -9,7 +9,7 @@ import SwiftUI
 import CloudKit
 
 /// Controller for interacting with the database.
-public class OneCloudController {
+@MainActor public class OneCloudController {
 
     private let container: CKContainer
     private let database: CKDatabase

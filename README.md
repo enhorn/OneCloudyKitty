@@ -1,5 +1,5 @@
 # OneCloudyKitty
-A small package to simplify basic CloudKit interactions, uses Async/Await.
+A small package to simplify basic CloudKit interactions, uses Async/Await and pulls data on a configured time interval.
 
 ## Usage example
 
@@ -10,7 +10,7 @@ Before we start set up a CloudKit container and selecting it in your Xcode proje
 We start by defining our model that we want to store.
 ```swift
 // Model fulfilling the protocol `OneRecordable`.
-class SomeEntity: OneRecordable {
+final class SomeEntity: OneRecordable {
 
     var recordID: CKRecord.ID // Required by `OneRecordable`.
     var name: String
@@ -112,4 +112,22 @@ struct ContentView: View {
     }
 
 }
+```
+
+There is also a database backed subscriber available, that will keep the database up-to-date with CloudKit.
+```swift
+OneStoredSubscriber<SomeEntity.StorageModel, SomeEntity>(
+    containerURL: URL.documentsDirectory.appendingPathComponent("Test/database.sqlite"),
+    controller: OneCloudController(containerID: "iCloud.SomeTestContainer"),
+    updateModel: { model, entity in
+        model.name = entity.name
+        model.age = entity.age
+        model.changeDate = entity.changeDate
+    },
+    updateEntity: { entity, model in
+        entity.name = model.name
+        entity.age = model.age
+        entity.changeDate = model.changeDate
+    }
+)
 ```
