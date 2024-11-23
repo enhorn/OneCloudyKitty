@@ -116,7 +116,7 @@ struct ContentView: View {
 
 There is also a database backed subscriber available, that will keep the database up-to-date with CloudKit.
 ```swift
-OneStoredSubscriber<SomeEntity.StorageModel, SomeEntity>(
+let subscriber = try OneStoredSubscriber<SomeEntity.StorageModel, SomeEntity>(
     containerURL: URL.documentsDirectory.appendingPathComponent("Test/database.sqlite"),
     controller: OneCloudController(containerID: "iCloud.SomeTestContainer"),
     updateModel: { model, entity in
