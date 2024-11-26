@@ -41,13 +41,13 @@ import OSLog
     ///   - controller: ``OneCloudController`` to use.
     ///   - predicate: Optional predicate to apply to fetches. Defaults to `NSPredicate(value: true)` (all records).
     ///   - initialEntities: Initial entities. Defaults to `[]`.
-    ///   - pullInterval: Time interval for automatic pulling of new data. Defaults to `5 minutes`.
+    ///   - pullInterval: Time interval for automatic pulling of new data. Defaults to `.oneDefaultPullInterval`.
     ///   - debugLogging: If debug logging should be performed. Defaults to `false`.
     public init(
         controller: OneCloudController,
         predicate: NSPredicate = NSPredicate(value: true),
         initialEntities: [Entity] = [],
-        pullInterval: TimeInterval = 5 * 60,
+        pullInterval: TimeInterval = .oneDefaultPullInterval,
         debugLogging: Bool = false
     ) {
         self.controller = controller

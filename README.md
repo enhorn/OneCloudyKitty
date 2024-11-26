@@ -99,7 +99,7 @@ struct ContentView: View {
 
     init () {
         // Takes an optional `NSPredicate` parameter for filtering the fetched entities.
-        // Also has an optional time intervall for pulling. Defaults to `5` minutes.
+        // Also has an optional time interval for pulling. Defaults to `5` minutes.
         subscriber = OneSubscriber<SomeEntity>(controller: controller)
         subscriber.start() // Starts pulling data
     }
@@ -117,7 +117,7 @@ struct ContentView: View {
 There is also a database backed subscriber available, that will keep the database up-to-date with CloudKit.
 ```swift
 let subscriber = try OneStoredSubscriber<SomeEntity.StorageModel, SomeEntity>(
-    containerURL: URL.documentsDirectory.appendingPathComponent("Test/database.sqlite"),
+    containerURL: URL.applicationSupportDirectory.appendingPathComponent("MyApp/database.sqlite"),
     controller: OneCloudController(containerID: "iCloud.SomeTestContainer"),
     updateModel: { model, entity in
         model.name = entity.name
@@ -130,4 +130,22 @@ let subscriber = try OneStoredSubscriber<SomeEntity.StorageModel, SomeEntity>(
         entity.changeDate = model.changeDate
     }
 )
+```
+
+And a generic reusable stored subscriber as well, where we have typed subscripts in the entity for supported stored types.
+The entities will always be stored as `OneGenericEntity` in CoudKit, and `OneGenericStorageModel` in the database.
+```swift
+let subscriber = try OneGenericStoredSubscriber.genericStoredSubscriber(
+    containerURL: URL.applicationSupportDirectory.appendingPathComponent("MyApp/database.sqlite"),
+    controller: OneCloudController(containerID: "iCloud.SomeTestContainer")
+)
+
+if let entity = subscriber.entities.first {
+    entity[string: "value-key"] // Optional String value
+    entity[integer: "value-key"] // Optional Int value
+    entity[double: "value-key"] // Optional Double value
+    entity[date: "value-key"] // Optional Date value
+    entity[data: "value-key"] // Optional Data value
+    entity[bool: "value-key", defaultValue: false] // Bool value, `defaultValue` is optionl.
+}
 ```

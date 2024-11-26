@@ -33,9 +33,9 @@ import OSLog
 
     /// - Parameters:
     ///   - containerURL: URL to the the container sqlite database.
-    ///   - controller: CloudKit controller to be used.
+    ///   - controller: ``OneCloudController`` controller to be used.
     ///   - deletionStategy: Deletion strategy. Defaults to `.remove`.
-    ///   - pullIntervall: Intervall for pulling CloudKit changes. Defaults to `5 minuters`.
+    ///   - pullInterval: Interval for pulling CloudKit changes. Defaults to `.oneDefaultPullInterval`.
     ///   - debugLogging: If debug logging should be performed. Defaults to `false`.
     ///   - updateModel: Closure for updating the model with changes from the entity. Relies on the `changeDate` property of the model & entity.
     ///   - updateEntity: Closure for updating the entity with changes from the model. Relies on the `changeDate` property of the model & entity.
@@ -43,7 +43,7 @@ import OSLog
         containerURL: URL,
         controller: OneCloudController,
         deletionStategy: DeletionStategy = .remove,
-        pullIntervall: TimeInterval = 5 * 60,
+        pullInterval: TimeInterval = .oneDefaultPullInterval,
         debugLogging: Bool = false,
         updateModel: @escaping UpdateModel,
         updateEntity: @escaping UpdateEntity
@@ -58,7 +58,7 @@ import OSLog
         )
         self.controller = controller
         self.deletionStategy = deletionStategy
-        self.subscriber = OneSubscriber<Entity>(controller: controller, pullInterval: pullIntervall, debugLogging: debugLogging)
+        self.subscriber = OneSubscriber<Entity>(controller: controller, pullInterval: pullInterval, debugLogging: debugLogging)
         self.updateModel = updateModel
         self.updateEntity = updateEntity
         self.entities = (try? Self.fetch(from: container)) ?? []

@@ -27,3 +27,10 @@ extension OneStoredSubscriber {
     }
 
 }
+
+extension TimeInterval {
+
+    /// Default interval is five minutes.
+    public static var oneDefaultPullInterval: TimeInterval { 5 * 60 }
+
+}

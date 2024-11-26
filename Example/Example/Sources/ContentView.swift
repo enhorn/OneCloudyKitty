@@ -25,7 +25,7 @@ struct ContentView: View {
         storedSubscriber = try! OneStoredSubscriber<SomeEntity.StorageModel, SomeEntity>(
             containerURL: URL.documentsDirectory.appendingPathComponent("Test/database.sqlite"),
             controller: controller,
-            pullIntervall: 5,
+            pullInterval: 5,
             debugLogging: true,
             updateModel: { model, entity in
                 model.name = entity.name
@@ -58,6 +58,13 @@ struct ContentView: View {
                     VStack {
                         Image(systemName: "list.bullet")
                         Text("Entities (\(subscriber.entities.count))")
+                    }
+                }
+            GenericFormView(controller: controller)
+                .tabItem {
+                    VStack {
+                        Image(systemName: "rectangle.and.pencil.and.ellipsis")
+                        Text("Generic Form")
                     }
                 }
         }.onAppear {
