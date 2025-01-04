@@ -103,7 +103,13 @@ public extension OneCloudController {
     @discardableResult func save<Entity: OneRecordable>(entity: Entity) async throws(OneCloudController.Error) -> Entity {
         do {
             let record = try await database.record(for: entity.recordID)
-            let savedRecord = try await database.save(entity.update(record: record))
+            let toSave = entity.update(record: record)
+
+            if let storable = toSave as? any OneRecordableStorable {
+                storable.changeDate = .now
+            }
+
+            let savedRecord = try await database.save(toSave)
             if let entity = Entity(savedRecord) {
                 notifySubscriptions()
                 return entity
