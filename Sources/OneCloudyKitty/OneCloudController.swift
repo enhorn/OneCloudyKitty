@@ -63,8 +63,9 @@ public extension OneCloudController {
     /// Create records and sync it with the CloudKit database.
     /// - Parameters:
     ///   - entities: The ``OneRecordable`` entities.
+    ///   - notifySubscribers: If any subscribers should be notified of the additions. Defaults to `true`.
     /// - Returns: Array of `Result<Entity, OneCloudController.Error>`. Discardable.
-    @discardableResult func create<Entity: OneRecordable>(entities: [Entity]) async throws(OneCloudController.Error) -> [Result<Entity, OneCloudController.Error>] {
+    @discardableResult func create<Entity: OneRecordable>(entities: [Entity], notifySubscribers: Bool = true) async throws(OneCloudController.Error) -> [Result<Entity, OneCloudController.Error>] {
         guard !entities.isEmpty else { return [] }
 
         do {
@@ -84,7 +85,10 @@ public extension OneCloudController {
                 }
             }
 
-            notifySubscriptions()
+            if notifySubscribers {
+                notifySubscriptions()
+            }
+
             return mappedResult
         } catch let error {
             throw .couldNotCreateRecords(error)
@@ -106,9 +110,11 @@ public extension OneCloudController {
     }
     
     /// Deletes the given entities.
-    /// - Parameter entities: Entities to delete.
+    /// - Parameters:
+    ///   - entities: Entities to delete.
+    ///   - notifySubscribers: If any subscribers should be notified of the additions. Defaults to `true`.
     /// - Returns: Arrays of `Result<CKRecord.ID, OneCloudController.Error>`. Discardable.
-    @discardableResult func delete<Entity: OneRecordable>(entities: [Entity]) async throws(OneCloudController.Error) -> [Result<CKRecord.ID, OneCloudController.Error>] {
+    @discardableResult func delete<Entity: OneRecordable>(entities: [Entity], notifySubscribers: Bool = true) async throws(OneCloudController.Error) -> [Result<CKRecord.ID, OneCloudController.Error>] {
         guard !entities.isEmpty else { return [] }
         do {
             let modifyResult = try await database.modifyRecords(saving: [], deleting: entities.map(\.recordID))
@@ -120,7 +126,10 @@ public extension OneCloudController {
                 }
             }
 
-            notifySubscriptions()
+            if notifySubscribers {
+                notifySubscriptions()
+            }
+
             return mappedResult
         } catch let error {
             throw .couldNotSaveRecords(error)
