@@ -74,14 +74,14 @@ public extension OneStoredSubscriber {
     /// Starts CloudKit changes subscription.
     func start() {
         guard subscription == nil else { return }
-        logger?.debug("Starting subscription.")
+        logger?.debug("<\(Self.typePrefix)> Starting subscription.")
         subscribeToCloudKit()
         subscriber.start()
     }
 
     /// Stops CloudKit changes subscription.
     func stop() {
-        logger?.debug("Stopping subscription.")
+        logger?.debug("<\(Self.typePrefix)> Stopping subscription.")
         unsubscribeFromCloudKit()
         subscriber.stop()
     }
@@ -129,7 +129,7 @@ private extension OneStoredSubscriber {
                 do {
                     try await self?.updateDatabase(with: entities)
                 } catch let error {
-                    self?.logger?.error("Error updating database: \(error)")
+                    self?.logger?.error("<\(Self.typePrefix)> Error updating database: \(error)")
                 }
             }
         }
@@ -154,12 +154,12 @@ private extension OneStoredSubscriber {
 
         for entity in cloudKitEntities {
             if let existingModel = current.first(where: { $0.recordID == entity.recordID.recordName }) {
-                guard existingModel.changeDate != entity.changeDate else { logger?.debug("Same change date, no updates needed, skipping."); continue }
+                guard existingModel.changeDate != entity.changeDate else { logger?.debug("<\(Self.typePrefix)> Same change date, no updates needed, skipping."); continue }
                 if case .entity(let updatedEntity) = updateModelOrEntity(existingModel: existingModel, entity: entity) {
                     updatedEntities.append(updatedEntity)
                 }
             } else {
-                logger?.debug("Adding model to database.")
+                logger?.debug("<\(Self.typePrefix)> Adding model to database.")
                 container.mainContext.insert(entity.storageModel())
             }
         }
@@ -169,7 +169,7 @@ private extension OneStoredSubscriber {
         handleDeletion(currentDataModels: current, cloudKitEntities: cloudKitEntities)
 
         if container.mainContext.hasChanges {
-            logger?.debug("Saving database changes.")
+            logger?.debug("<\(Self.typePrefix)> Saving database changes.")
             try container.mainContext.save()
         }
 
@@ -184,7 +184,7 @@ private extension OneStoredSubscriber {
                     !cloudKitEntities.contains(where: { $0.recordID.recordName == model.recordID })
                 }
                 if !modelsToDelete.isEmpty {
-                    logger?.debug("Deleting \(modelsToDelete.count) models that has been removed from CloudKit.")
+                    logger?.debug("<\(Self.typePrefix)> Deleting \(modelsToDelete.count) models that has been removed from CloudKit.")
                     for model in modelsToDelete {
                         container.mainContext.delete(model)
                     }
@@ -194,11 +194,11 @@ private extension OneStoredSubscriber {
 
     func updateModelOrEntity(existingModel: StorageModel, entity: Entity) -> Update {
         if existingModel.changeDate < entity.changeDate {
-            logger?.debug("Updating storage model with entity changes.")
+            logger?.debug("<\(Self.typePrefix)> Updating storage model with entity changes.")
             updateModel(existingModel, entity)
             return .model(existingModel)
         } else {
-            logger?.debug("Updating entity with storage model changes.")
+            logger?.debug("<\(Self.typePrefix)> Updating entity with storage model changes.")
             updateEntity(entity, existingModel)
             return .entity(entity)
         }
@@ -220,6 +220,10 @@ private extension OneStoredSubscriber {
 // MARK: - Support -
 
 private extension OneStoredSubscriber {
+
+    static var typePrefix: String {
+        "OneStoredSubscriber<\(String(describing: Entity.self))>"
+    }
 
     private func notifySubscriptions() {
         changeSubscriptions.forEach { subsciption in

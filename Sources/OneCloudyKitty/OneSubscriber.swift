@@ -72,7 +72,7 @@ public extension OneSubscriber {
     /// Startes the pulling of data. Does nothing if already running.
     func start() {
         guard timer == nil else { return }
-        logger?.debug("Starting subscription.")
+        logger?.debug("<\(String(describing: Self.self))> Starting subscription.")
 
         Task { [weak self] in
             try? await self?.refresh()
@@ -99,7 +99,7 @@ public extension OneSubscriber {
 
     /// Stops the pulling of data.
     func stop() {
-        logger?.debug("Stopping subscription.")
+        logger?.debug("<\(String(describing: Self.self))> Stopping subscription.")
         timer?.invalidate()
         timer = nil
         if let listener {
@@ -111,9 +111,9 @@ public extension OneSubscriber {
     func refresh() async throws {
         do {
             entities = try await controller.getAll(predicate: predicate)
-            logger?.debug("Refreshed entities.")
+            logger?.debug("<\(String(describing: Self.self))> Refreshed entities.")
         } catch let error {
-            logger?.error("Failed to refresh entities: \(error)")
+            logger?.error("<\(String(describing: Self.self))>  Failed to refresh entities: \(error)")
             throw error
         }
     }
