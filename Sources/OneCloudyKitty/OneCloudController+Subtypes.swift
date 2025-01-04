@@ -29,6 +29,9 @@ extension OneCloudController {
         /// The record could not be created.
         case couldNotCreateRecord(_ cloudKitError: Swift.Error)
 
+        /// The records could not be created.
+        case couldNotCreateRecords(_ cloudKitError: Swift.Error)
+
         /// The record could not be deleted.
         case couldNotDeleteRecord(_ cloudKitError: Swift.Error)
 

@@ -33,7 +33,7 @@ import CloudKit
 
 public extension OneCloudController {
 
-    /// Create a record and sync it with the CloudKit database..
+    /// Create a record and sync it with the CloudKit database.
     /// - Parameters:
     ///   - constructor: Contructor closure.
     /// - Returns: The ``OneRecordable`` entity that has been contructet from the CloudKit responce.
@@ -41,7 +41,7 @@ public extension OneCloudController {
         try await create(entity: constructor())
     }
 
-    /// Create a record and sync it with the CloudKit database..
+    /// Create a record and sync it with the CloudKit database.
     /// - Parameters:
     ///   - entity: The ``OneRecordable`` entity.
     /// - Returns: The ``OneRecordable`` entity that has been contructet from the CloudKit responce.
@@ -57,6 +57,37 @@ public extension OneCloudController {
             }
         } catch let error {
             throw .couldNotCreateRecord(error)
+        }
+    }
+
+    /// Create records and sync it with the CloudKit database.
+    /// - Parameters:
+    ///   - entities: The ``OneRecordable`` entities.
+    /// - Returns: Array of `Result<Entity, OneCloudController.Error>`. Discardable.
+    @discardableResult func create<Entity: OneRecordable>(entities: [Entity]) async throws(OneCloudController.Error) -> [Result<Entity, OneCloudController.Error>] {
+        guard !entities.isEmpty else { return [] }
+
+        do {
+            let recordsToSave = entities.map { $0.generateNewRecord() }
+            let modifyResult = try await database.modifyRecords(saving: recordsToSave, deleting: [], savePolicy: .allKeys)
+
+            let mappedResult: [Result<Entity, OneCloudController.Error>] = try modifyResult.saveResults.map { modifyResult in
+                switch modifyResult.value {
+                    case .success(let record):
+                        if let entity = Entity(record) {
+                            return .success(entity)
+                        } else {
+                            throw Error.savedRecordLacksData
+                        }
+                    case .failure(let error):
+                        return .failure(.couldNotCreateRecord(error))
+                }
+            }
+
+            notifySubscriptions()
+            return mappedResult
+        } catch let error {
+            throw .couldNotCreateRecords(error)
         }
     }
 
