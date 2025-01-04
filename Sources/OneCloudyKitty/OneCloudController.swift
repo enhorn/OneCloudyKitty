@@ -165,20 +165,7 @@ public extension OneCloudController {
     ///   - predicate: Optional predicate. Default to `nil`.
     /// - Returns: An array of ``OneRecordable`` entities.
     func getAll<Entity: OneRecordable>(predicate: NSPredicate? = nil) async throws -> [Entity] {
-        try await withCheckedThrowingContinuation { continuation in
-            database.fetch(withQuery: CKQuery(recordType: Entity.recordType, predicate: predicate ?? NSPredicate(value: true))) { result in
-                switch result {
-                    case .success(let records):
-                        do {
-                            continuation.resume(returning: try records.matchResults.compactMap { Entity(try $0.1.get()) })
-                        } catch let error {
-                            continuation.resume(throwing: Error.other(error))
-                        }
-                    case .failure(let error):
-                        continuation.resume(throwing: Error.couldNotFetchRecords(error))
-                }
-            }
-        }
+        try await fetchAll(fetchInfo: .initial(predicate))
     }
 
     /// Updates a property of a ``OneRecordable`` entity and saves it with the CloudKit database.
@@ -196,6 +183,78 @@ public extension OneCloudController {
         }
     }
 
+}
+
+// MARK: - Pagination fetching -
+
+fileprivate typealias CloudKitFetchResult = Result<(matchResults: [(CKRecord.ID, Result<CKRecord, any Swift.Error>)], queryCursor: CKQueryOperation.Cursor?), any Swift.Error>
+
+fileprivate enum OneFetchInfo {
+    case initial(NSPredicate?)
+    case more(CKQueryOperation.Cursor)
+}
+
+fileprivate enum OneFetchResult<Entity: OneRecordable>: @unchecked Sendable {
+    case all([Entity])
+    case hasMore([Entity], CKQueryOperation.Cursor)
+    case error(OneCloudController.Error)
+}
+
+private extension OneCloudController {
+
+    private func fetchAll<Entity: OneRecordable>(fetchInfo: OneFetchInfo) async throws -> [Entity] {
+        try await withCheckedThrowingContinuation { continuation in
+
+            @MainActor func checkForMore(result: CloudKitFetchResult, continuation: CheckedContinuation<[Entity], any Swift.Error>) async throws {
+                let res: OneFetchResult<Entity> = handleFetch(result: result)
+                switch res {
+                    case .all(let entities):
+                        continuation.resume(with: .success(entities))
+                    case .hasMore(let entities, let cursor):
+                        let next: [Entity] = try await fetchAll(fetchInfo: .more(cursor))
+                        DispatchQueue.main.async {
+                            continuation.resume(with: .success(entities + next))
+                        }
+                    case .error(let error):
+                        continuation.resume(with: .failure(error))
+                }
+            }
+
+            switch fetchInfo {
+                case .initial(let predicate):
+                    database.fetch(withQuery: CKQuery(recordType: Entity.recordType, predicate: predicate ?? NSPredicate(value: true))) { result in
+                        Task { @MainActor in
+                            try await checkForMore(result: result, continuation: continuation)
+                        }
+                    }
+                case .more(let cursor):
+                    database.fetch(withCursor: cursor) { result in
+                        Task { @MainActor in
+                            try await checkForMore(result: result, continuation: continuation)
+                        }
+                    }
+            }
+        }
+    }
+
+}
+
+fileprivate func handleFetch<Entity: OneRecordable>(result: CloudKitFetchResult) -> OneFetchResult<Entity> {
+    switch result {
+        case .success(let records):
+            do {
+                let entities = try records.matchResults.compactMap { Entity(try $0.1.get()) }
+                if let cursor = records.queryCursor {
+                    return .hasMore(entities, cursor)
+                } else {
+                    return .all(entities)
+                }
+            } catch let error {
+                return .error(OneCloudController.Error.other(error))
+            }
+        case .failure(let error):
+            return .error(OneCloudController.Error.couldNotFetchRecords(error))
+    }
 }
 
 // MARK: - Internal subscriptions -
